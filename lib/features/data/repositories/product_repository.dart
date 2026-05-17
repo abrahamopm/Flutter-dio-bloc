@@ -15,5 +15,7 @@ class ProductRepository {
 
   Future<Product> updateProduct(Product product) => _remoteDatasource.updateProduct(product);
 
+  Future<Product> patchProduct(int id, Map<String, dynamic> data) => _remoteDatasource.patchProduct(id, data);
+
   Future<void> deleteProduct(int id) => _remoteDatasource.deleteProduct(id);
 }

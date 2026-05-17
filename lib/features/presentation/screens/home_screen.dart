@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:flutter_bloc/flutter_bloc.dart';
 import 'package:flutter_dio_bloc/features/presentation/providers/product_provider.dart';
+import 'package:flutter_dio_bloc/features/data/models/product.dart';
 
 class HomeScreen extends StatelessWidget {
   const HomeScreen({super.key});
@@ -13,11 +14,14 @@ class HomeScreen extends StatelessWidget {
       ),
       floatingActionButton: FloatingActionButton(
         onPressed: () async {
-          await context.read<ProductProvider>().createProduct('New Product');
-          if (context.mounted) {
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Product Created')),
-            );
+          final product = await _showProductFormDialog(context);
+          if (product != null) {
+            await context.read<ProductProvider>().createProduct(product);
+            if (context.mounted) {
+              ScaffoldMessenger.of(context).showSnackBar(
+                const SnackBar(content: Text('Product Created')),
+              );
+            }
           }
         },
         child: const Icon(Icons.add),
@@ -52,14 +56,33 @@ class HomeScreen extends StatelessWidget {
                           IconButton(
                             icon: const Icon(Icons.edit),
                             onPressed: () async {
-                              await context.read<ProductProvider>().updateProduct(
-                                    product,
-                                    'Updated Product',
+                              final updated = await _showProductFormDialog(context, existing: product);
+                              if (updated != null) {
+                                await context.read<ProductProvider>().updateProduct(updated);
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Product Updated')),
                                   );
-                              if (context.mounted) {
-                                ScaffoldMessenger.of(context).showSnackBar(
-                                  const SnackBar(content: Text('Product Updated')),
-                                );
+                                }
+                              }
+                            },
+                          ),
+                          IconButton(
+                            icon: const Icon(Icons.auto_fix_high_outlined),
+                            onPressed: () async {
+                              final newTitle = await _showTextInputDialog(
+                                context,
+                                title: 'Patch Title',
+                                label: 'Title',
+                                initialValue: product.title,
+                              );
+                              if (newTitle != null && newTitle.trim().isNotEmpty) {
+                                await context.read<ProductProvider>().patchProduct(product.id!, {'title': newTitle.trim()});
+                                if (context.mounted) {
+                                  ScaffoldMessenger.of(context).showSnackBar(
+                                    const SnackBar(content: Text('Product Patched')),
+                                  );
+                                }
                               }
                             },
                           ),
@@ -111,4 +134,139 @@ class HomeScreen extends StatelessWidget {
       ),
     );
   }
+}
+
+Future<Product?> _showProductFormDialog(BuildContext context, {Product? existing}) {
+  final titleController = TextEditingController(text: existing?.title ?? '');
+  final priceController = TextEditingController(text: existing != null ? existing.price.toString() : '');
+  final descriptionController = TextEditingController(text: existing?.description ?? '');
+  final categoryController = TextEditingController(text: existing?.category ?? '');
+  final imageController = TextEditingController(text: existing?.image ?? '');
+
+  final formKey = GlobalKey<FormState>();
+
+  return showDialog<Product?>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(existing == null ? 'Create Product' : 'Update Product'),
+        content: SingleChildScrollView(
+          child: Form(
+            key: formKey,
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                TextFormField(
+                  controller: titleController,
+                  decoration: const InputDecoration(labelText: 'Title'),
+                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Title required' : null,
+                ),
+                TextFormField(
+                  controller: priceController,
+                  decoration: const InputDecoration(labelText: 'Price'),
+                  keyboardType: const TextInputType.numberWithOptions(decimal: true),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return 'Price required';
+                    final parsed = double.tryParse(value);
+                    if (parsed == null) return 'Enter a valid number';
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  controller: descriptionController,
+                  decoration: const InputDecoration(labelText: 'Description'),
+                  maxLines: 2,
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return null; // optional
+                    if (value.trim().length < 3) return 'Description too short';
+                    return null;
+                  },
+                ),
+                TextFormField(
+                  controller: categoryController,
+                  decoration: const InputDecoration(labelText: 'Category'),
+                  validator: (value) => (value == null || value.trim().isEmpty) ? 'Category required' : null,
+                ),
+                TextFormField(
+                  controller: imageController,
+                  decoration: const InputDecoration(labelText: 'Image URL'),
+                  validator: (value) {
+                    if (value == null || value.trim().isEmpty) return null; // optional
+                    final uri = Uri.tryParse(value.trim());
+                    if (uri == null || !(uri.isAbsolute && (uri.scheme == 'http' || uri.scheme == 'https'))) {
+                      return 'Enter a valid http(s) URL';
+                    }
+                    return null;
+                  },
+                ),
+              ],
+            ),
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(null), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                final product = Product(
+                  id: existing?.id,
+                  title: titleController.text.trim(),
+                  price: double.parse(priceController.text.trim()),
+                  description: descriptionController.text.trim(),
+                  category: categoryController.text.trim(),
+                  image: imageController.text.trim(),
+                );
+                Navigator.of(context).pop(product);
+              }
+            },
+            child: Text(existing == null ? 'Create' : 'Update'),
+          ),
+        ],
+      );
+    },
+  );
+}
+
+Future<String?> _showTextInputDialog(
+  BuildContext context, {
+  required String title,
+  required String label,
+  String? initialValue,
+}) {
+  final controller = TextEditingController(text: initialValue ?? '');
+  final formKey = GlobalKey<FormState>();
+
+  return showDialog<String?>(
+    context: context,
+    barrierDismissible: false,
+    builder: (context) {
+      return AlertDialog(
+        title: Text(title),
+        content: Form(
+          key: formKey,
+          child: TextFormField(
+            controller: controller,
+            decoration: InputDecoration(labelText: label),
+            validator: (value) {
+              if (value == null || value.trim().isEmpty) return 'Value required';
+              if (value.trim().length > 250) return 'Too long';
+              return null;
+            },
+          ),
+        ),
+        actions: [
+          TextButton(onPressed: () => Navigator.of(context).pop(null), child: const Text('Cancel')),
+          ElevatedButton(
+            onPressed: () {
+              if (formKey.currentState?.validate() ?? false) {
+                Navigator.of(context).pop(controller.text);
+              }
+            },
+            child: const Text('OK'),
+          ),
+        ],
+      );
+    },
+  );
 }

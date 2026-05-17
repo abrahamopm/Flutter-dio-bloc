@@ -54,20 +54,12 @@ class ProductProvider extends Cubit<ProductState> {
     }
   }
 
-  Future<void> createProduct(String title) async {
+  Future<void> createProduct(Product product) async {
     final currentState = state;
     if (currentState is! ProductLoaded) return;
 
     try {
-      final newProduct = await _repository.createProduct(
-        Product(
-          title: title,
-          price: 10.99,
-          description: 'A new product',
-          category: 'electronics',
-          image: 'https://i.pravatar.cc/150?u=$title',
-        ),
-      );
+      final newProduct = await _repository.createProduct(product);
 
       emit(ProductLoaded([newProduct, ...currentState.products]));
     } catch (error) {
@@ -75,24 +67,31 @@ class ProductProvider extends Cubit<ProductState> {
     }
   }
 
-  Future<void> updateProduct(Product product, String newTitle) async {
+  Future<void> updateProduct(Product updatedProduct) async {
     final currentState = state;
     if (currentState is! ProductLoaded) return;
 
     try {
-      final updatedProduct = await _repository.updateProduct(
-        Product(
-          id: product.id,
-          title: newTitle,
-          price: product.price,
-          description: product.description,
-          category: product.category,
-          image: product.image,
-        ),
-      );
+      final updated = await _repository.updateProduct(updatedProduct);
 
       final newProducts = currentState.products.map((p) {
-        return p.id == updatedProduct.id ? updatedProduct : p;
+        return p.id == updated.id ? updated : p;
+      }).toList();
+
+      emit(ProductLoaded(newProducts));
+    } catch (error) {
+      emit(ProductError(error.toString()));
+    }
+  }
+
+  Future<void> patchProduct(int id, Map<String, dynamic> data) async {
+    final currentState = state;
+    if (currentState is! ProductLoaded) return;
+
+    try {
+      final patched = await _repository.patchProduct(id, data);
+      final newProducts = currentState.products.map((p) {
+        return p.id == patched.id ? patched : p;
       }).toList();
 
       emit(ProductLoaded(newProducts));

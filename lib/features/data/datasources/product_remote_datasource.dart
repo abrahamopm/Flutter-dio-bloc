@@ -40,6 +40,14 @@ class ProductRemoteDatasource {
     return Product.fromJson(response.data as Map<String, dynamic>);
   }
 
+  Future<Product> patchProduct(int id, Map<String, dynamic> data) async {
+    final response = await _dio.patch(
+      ApiConstants.productById(id),
+      data: data,
+    );
+    return Product.fromJson(response.data as Map<String, dynamic>);
+  }
+
   Future<void> deleteProduct(int id) async {
     await _dio.delete(ApiConstants.productById(id));
   }

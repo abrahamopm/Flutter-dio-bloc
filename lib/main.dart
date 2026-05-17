@@ -25,7 +25,7 @@ class MyApp extends StatelessWidget {
         title: 'Product Management App',
         debugShowCheckedModeBanner: false,
         theme: ThemeData(
-          colorScheme: ColorScheme.fromSeed(seedColor: Colors.deepPurple),
+          colorScheme: ColorScheme.fromSeed(seedColor: Colors.limeAccent),
           useMaterial3: true,
         ),
         home: const HomeScreen(),

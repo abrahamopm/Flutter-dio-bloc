@@ -30,7 +30,7 @@ class HomeScreen extends StatelessWidget {
         builder: (context, state) {
           return switch (state) {
             ProductInitial() || ProductLoading() =>
-              const Center(child: CircularProgressIndicator()),
+              const Center(child: _PulsingProgressIndicator()),
             ProductError(:final message) => Center(child: Text(message)),
             ProductLoaded(:final products) => RefreshIndicator(
                 onRefresh: () => context.read<ProductProvider>().loadProducts(),
@@ -226,6 +226,43 @@ Future<Product?> _showProductFormDialog(BuildContext context, {Product? existing
       );
     },
   );
+}
+
+class _PulsingProgressIndicator extends StatefulWidget {
+  const _PulsingProgressIndicator();
+
+  @override
+  State<_PulsingProgressIndicator> createState() => _PulsingProgressIndicatorState();
+}
+
+class _PulsingProgressIndicatorState extends State<_PulsingProgressIndicator>
+    with SingleTickerProviderStateMixin {
+  late AnimationController _controller;
+  late Animation<double> _animation;
+
+  @override
+  void initState() {
+    super.initState();
+    _controller = AnimationController(
+      duration: const Duration(milliseconds: 1000),
+      vsync: this,
+    )..repeat(reverse: true);
+    _animation = Tween<double>(begin: 0.3, end: 1.0).animate(_controller);
+  }
+
+  @override
+  void dispose() {
+    _controller.dispose();
+    super.dispose();
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return FadeTransition(
+      opacity: _animation,
+      child: const CircularProgressIndicator(),
+    );
+  }
 }
 
 Future<String?> _showTextInputDialog(

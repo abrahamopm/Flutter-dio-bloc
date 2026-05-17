@@ -2,6 +2,8 @@
 
 A Flutter application that performs full CRUD (Create, Read, Update, Delete) operations on product data using the **FakeStore API**. Built with **flutter_bloc** state management and **dio** package for networking.
 
+Note: This project and the companion Provider/HTTP project both use the same public API (https://fakestoreapi.com); they differ in UI and in the chosen state-management/network libraries.
+
 ## Tech Stack
 
 - **Flutter** - UI Framework

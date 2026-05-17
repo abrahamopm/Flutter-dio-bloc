@@ -53,4 +53,67 @@ class ProductProvider extends Cubit<ProductState> {
       emit(ProductError(error.toString()));
     }
   }
+
+  Future<void> createProduct(String title) async {
+    final currentState = state;
+    if (currentState is! ProductLoaded) return;
+
+    try {
+      final newProduct = await _repository.createProduct(
+        Product(
+          title: title,
+          price: 10.99,
+          description: 'A new product',
+          category: 'electronics',
+          image: 'https://i.pravatar.cc/150?u=$title',
+        ),
+      );
+
+      emit(ProductLoaded([newProduct, ...currentState.products]));
+    } catch (error) {
+      emit(ProductError(error.toString()));
+    }
+  }
+
+  Future<void> updateProduct(Product product, String newTitle) async {
+    final currentState = state;
+    if (currentState is! ProductLoaded) return;
+
+    try {
+      final updatedProduct = await _repository.updateProduct(
+        Product(
+          id: product.id,
+          title: newTitle,
+          price: product.price,
+          description: product.description,
+          category: product.category,
+          image: product.image,
+        ),
+      );
+
+      final newProducts = currentState.products.map((p) {
+        return p.id == updatedProduct.id ? updatedProduct : p;
+      }).toList();
+
+      emit(ProductLoaded(newProducts));
+    } catch (error) {
+      emit(ProductError(error.toString()));
+    }
+  }
+
+  Future<void> deleteProduct(int id) async {
+    final currentState = state;
+    if (currentState is! ProductLoaded) return;
+
+    try {
+      await _repository.deleteProduct(id);
+
+      final newProducts =
+          currentState.products.where((p) => p.id != id).toList();
+
+      emit(ProductLoaded(newProducts));
+    } catch (error) {
+      emit(ProductError(error.toString()));
+    }
+  }
 }

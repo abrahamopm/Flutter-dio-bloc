@@ -14,7 +14,7 @@ class HomeScreen extends StatelessWidget {
           mainAxisSize: MainAxisSize.min,
           children: [
             const Text(
-              'STOREBOARD',
+              'Fakestore',
               style: TextStyle(
                 fontWeight: FontWeight.w900,
                 letterSpacing: 2.0,
@@ -30,7 +30,7 @@ class HomeScreen extends StatelessWidget {
                 border: Border.all(color: const Color(0xFFBB86FC).withValues(alpha: 0.3)),
               ),
               child: const Text(
-                'BLOC ENGINE',
+                'BLOC',
                 style: TextStyle(
                   color: Color(0xFFBB86FC),
                   fontSize: 9,
